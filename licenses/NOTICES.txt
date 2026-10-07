@@ -1,0 +1,86 @@
+MosaicDiff uses the works below. The full license texts are in this folder.
+Keep this folder with the program when you share it.
+
+Shipped in this folder
+----------------------
+
+models\rfdetr.onnx
+  Jasna RF-DETR v6 mosaic detector.
+  Copyright 2026 Kruk2
+  License: Apache-2.0 (Apache-2.0.txt)
+  The network architecture is Roboflow RF-DETR 1.8.3, also Apache-2.0:
+  https://github.com/roboflow/rf-detr
+
+comfyui_nvidia_rtx_nodes
+  NVIDIA RTX nodes for ComfyUI, included with MosaicDiff.
+  License: Apache-2.0 (Apache-2.0.txt)
+  https://github.com/Comfy-Org/Nvidia_RTX_Nodes_ComfyUI
+
+BasicVSR++ code in mosaicdiff\basicvsr
+  Copyright Lada Authors
+  License: AGPL-3.0 (AGPL-3.0.txt)
+  https://github.com/ladaapp/lada
+
+BasicVSR++ pieces from OpenMMLab MMagic, in mosaicdiff\basicvsr\mmagic
+  Copyright OpenMMLab. All rights reserved.
+  License: Apache-2.0 AND AGPL-3.0 (Apache-2.0.txt and AGPL-3.0.txt)
+  https://github.com/open-mmlab/mmagic
+
+PyTorch and torchvision
+  License: BSD-3-Clause (BSD-3-Clause.txt)
+  https://github.com/pytorch/pytorch
+
+NumPy
+  License: BSD-3-Clause (BSD-3-Clause.txt)
+  https://github.com/numpy/numpy
+
+PyAV, and the FFmpeg libraries inside it
+  PyAV itself is BSD-3-Clause (BSD-3-Clause.txt).
+  The FFmpeg build in that wheel includes GPL components, including x264.
+  License for that combined payload: GPL-3.0 (GPL-3.0.txt)
+  https://github.com/PyAV-Org/PyAV
+  https://ffmpeg.org
+
+ONNX Runtime
+  Copyright (c) Microsoft Corporation
+  License: MIT (MIT-ONNX-Runtime.txt)
+  https://github.com/microsoft/onnxruntime
+
+CustomTkinter
+  Copyright (c) 2023 Tom Schimansky
+  License: MIT (MIT-CustomTkinter.txt)
+  https://github.com/TomSchimansky/CustomTkinter
+
+OpenCV
+  License: Apache-2.0 (Apache-2.0.txt)
+  https://github.com/opencv/opencv
+
+MMEngine
+  License: Apache-2.0 (Apache-2.0.txt)
+  https://github.com/open-mmlab/mmengine
+
+huggingface_hub
+  License: Apache-2.0 (Apache-2.0.txt)
+  https://github.com/huggingface/huggingface_hub
+
+Downloaded on first Start
+-------------------------
+
+basicvsr.pth
+  Lada BasicVSR++ mosaic restoration checkpoint, unmodified.
+  Copyright ladaapp and contributors
+  License: AGPL-3.0 (AGPL-3.0.txt)
+  https://huggingface.co/ladaapp/lada
+
+unet.safetensors
+  Eros Max, file 10Eros_Max_h3_TURBO-hybrid_beta5_int8.safetensors
+  Downloaded from https://huggingface.co/TenStrip/10Eros-Max
+  That repository keeps its own license. MosaicDiff does not replace it.
+
+clip.safetensors and vae.safetensors
+  MiniMax H3 text encoder and video VAE.
+  Downloaded from https://huggingface.co/Comfy-Org/MiniMax-H3
+  That repository keeps its own license. MosaicDiff does not replace it.
+
+models\lora.safetensors is not downloaded. Whoever places that file is
+responsible for the right to share it.

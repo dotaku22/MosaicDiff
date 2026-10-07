@@ -1,0 +1,9 @@
+av==18.1.0
+numpy>=1.26
+opencv-python<5
+customtkinter==6.0.0
+mmengine==0.10.7
+torch==2.12.1+cu130
+onnxruntime>=1.20
+huggingface_hub>=0.26
+pyinstaller>=6
