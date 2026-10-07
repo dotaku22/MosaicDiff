@@ -1,6 +1,6 @@
 # MosaicDiff
 
-Restore mosaic with BasicVSR++, then repaint it with Eros Max and custom lora.
+Restore mosaic using MiniMax H3 and custom lora.
 
 It needs a beefy GPU. It is slow, and the quality is outstanding. One second of video takes about one minute on an RTX 3070 Ti.
 
