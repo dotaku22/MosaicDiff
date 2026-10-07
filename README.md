@@ -1,12 +1,8 @@
 # MosaicDiff
 
-MosaicDiff restores mosaic in a video with the plain BasicVSR++ checkpoint, then repaints that region with Eros Max on MiniMax H3.
+Restore mosaic with BasicVSR++, then repaint it with Eros Max and custom lora.
 
-It is a separate program. It does not run Jasna.
-
-## Run it here
-
-`run.bat` uses the Jasna virtual environment when that environment is next to this folder. Finished videos go to `Output`. If a public weight file is missing, Start downloads it into `models\`. Place your own LoRA there as `lora.safetensors`. Open **Models** if a path is wrong.
+It needs a beefy GPU. It is slow, and the quality is outstanding. One second of video takes about one minute on an RTX 3070 Ti.
 
 ## Download the Windows program
 
@@ -18,9 +14,13 @@ On the other PC:
 
 - An NVIDIA GPU and a current driver.
 - A current ComfyUI install, the normal one from the ComfyUI site or the portable package. MosaicDiff looks for it in the usual folders. If it cannot find it, set **ComfyUI Python** and **ComfyUI folder** in **Models**.
-- Your LoRA, saved as `models\lora.safetensors`. BasicVSR++, Eros Max, the text encoder, and the video VAE download on first Start when they are missing.
+- The Windows download includes the custom LoRA. BasicVSR++, Eros Max, the text encoder, and the video VAE download on first Start when they are missing.
 
 The H3 context-window node and the RTX upscaler ship in `comfy_nodes` and are loaded from there. The other PC does not install those itself. The first H3 run installs the NVIDIA video effects package into that ComfyUI Python if it is not already there. ComfyUI itself still has to include the built-in MiniMax H3 nodes, so use a current ComfyUI.
+
+## Run it from source
+
+`run.bat` uses a virtual environment next to this folder when that environment is there. Otherwise it uses Python on the PATH. Finished videos go to `Output`. If a public weight file is missing, Start downloads it into `models\`. Place the LoRA there as `lora.safetensors`. Open **Models** if a path is wrong.
 
 ## What the window does
 
