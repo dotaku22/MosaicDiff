@@ -4,6 +4,10 @@ Restore mosaic using MiniMax H3 and custom lora.
 
 It needs a beefy GPU. It is slow, and the quality is outstanding. One second of video takes about one minute on an RTX 3070 Ti.
 
+## Examples
+
+Censored AI-generated clips made with MosaicDiff are on [Civitai](https://civitai.red/models/2990026/mosaic-restoration).
+
 ## Download the Windows program
 
 The ready-to-run build is on the [Releases](https://github.com/dotaku22/MosaicDiff/releases) page. Download `MosaicDiff-windows.7z`, open it with [7-Zip](https://www.7-zip.org/), and run `MosaicDiff.exe`.
