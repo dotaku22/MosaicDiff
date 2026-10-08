@@ -422,6 +422,7 @@ def _restore_window(loaded, job: dict, window: dict, crops: dict | None = None) 
         loaded["base_model"],
         {
             "comfy_root": job["comfy_root"],
+            "nodes_dir": job.get("nodes_dir"),
             "context_frames": int(window.get("context_frames", job.get("context_frames", 124))),
             "context_overlap": int(window.get("context_overlap", job.get("context_overlap", 22))),
         },
