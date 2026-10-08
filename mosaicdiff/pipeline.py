@@ -195,14 +195,16 @@ def _flush_chunk(hold, model, device, writer, keep_tail: int, skip_head: int) ->
             output = restore_squares(model, squares, device)
             for (index, box, meta), square in zip(metas, output):
                 restored[index] = _unletterbox(square, box, meta)
-    end = len(hold) if keep_tail <= 0 else max(skip_head, len(hold) - keep_tail)
-    for index in range(skip_head, end):
+    # Write every frame past the ones the previous chunk already wrote. The
+    # last keep_tail frames stay in hold only as context for the next chunk,
+    # which skips them again through skip_head.
+    for index in range(skip_head, len(hold)):
         frame, box = hold[index]
         patch = restored.get(index)
         if patch is not None and box is not None:
             frame = _paste(frame, patch, box)
         writer.write(frame)
-    del hold[:end]
+    del hold[: max(0, len(hold) - keep_tail)]
 
 
 def _unletterbox(square_rgb: np.ndarray, box, meta) -> np.ndarray:
