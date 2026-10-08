@@ -101,6 +101,14 @@ def discover_comfy(settings: Settings, log) -> None:
         settings.save()
 
 
+def _pip_install(python: Path, args: list[str]) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        [str(python), "-m", "pip", "install", "--disable-pip-version-check", *args],
+        capture_output=True,
+        text=True,
+    )
+
+
 def ensure_rtx_package(settings: Settings, log, cancel: threading.Event) -> None:
     """Install nvidia-vfx into the Comfy environment when the RTX node needs it."""
     python = settings.resolved("comfy_python")
@@ -118,11 +126,16 @@ def ensure_rtx_package(settings: Settings, log, cancel: threading.Event) -> None
     log("Installing the NVIDIA video effects package into ComfyUI")
     if cancel.is_set():
         return
-    installed = subprocess.run(
-        [str(python), "-m", "pip", "install", "--disable-pip-version-check", "nvidia-vfx"],
-        capture_output=True,
-        text=True,
+    # PyPI only publishes the source package. Building it imports
+    # wheel_stub.buildapi, which portable ComfyUI's pip does not have.
+    # The binary wheel is on NVIDIA's index.
+    installed = _pip_install(
+        python,
+        ["--only-binary", ":all:", "--extra-index-url", "https://pypi.nvidia.com", "nvidia-vfx"],
     )
+    if installed.returncode != 0 and not cancel.is_set():
+        if _pip_install(python, ["wheel_stub"]).returncode == 0:
+            installed = _pip_install(python, ["nvidia-vfx"])
     if installed.returncode != 0:
         detail = (installed.stderr or installed.stdout or "").strip().splitlines()
         tail = detail[-1] if detail else "pip failed"
