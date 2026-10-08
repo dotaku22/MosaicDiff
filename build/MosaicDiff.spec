@@ -27,6 +27,7 @@ for dirpath, _, filenames in os.walk(nodes):
         datas.append((os.path.join(dirpath, name), dest))
 binaries = []
 hidden = collect_submodules("mosaicdiff")
+# The pip package is onnxruntime-gpu. The import name stays onnxruntime.
 hidden += ["mmengine", "onnxruntime", "customtkinter", "av", "cv2"]
 
 for package in ("torch", "customtkinter", "av", "onnxruntime", "mmengine", "huggingface_hub", "cv2", "numpy"):

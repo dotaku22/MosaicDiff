@@ -6,6 +6,7 @@ so the same file works on any graphics card.
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import numpy as np
@@ -18,6 +19,15 @@ _PROVIDER_ORDER = (
     "DmlExecutionProvider",
     "CPUExecutionProvider",
 )
+
+
+def _cuda_libraries() -> None:
+    """The CUDA provider loads cuDNN from the libraries shipped with PyTorch."""
+    if os.name != "nt" or not hasattr(os, "add_dll_directory"):
+        return
+    lib = Path(torch.__file__).resolve().parent / "lib"
+    if lib.is_dir():
+        os.add_dll_directory(str(lib))
 
 
 def _providers() -> list[str]:
@@ -39,6 +49,7 @@ class Detector:
             )
         self.device = device
         self.score_threshold = float(score_threshold)
+        _cuda_libraries()
         self.session = ort.InferenceSession(str(model_path), providers=_providers())
         self.provider = self.session.get_providers()[0]
         model_input = self.session.get_inputs()[0]
