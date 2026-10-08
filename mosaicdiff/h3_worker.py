@@ -27,7 +27,9 @@ def _boot() -> None:
     comfy.options.args_parsing = False
     import comfy.cli_args as cli_args
 
-    cli_args.args.use_sage_attention = True
+    # ComfyUI calls exit(-1) while importing comfy.ldm.modules.attention when
+    # this flag is set and the sageattention package is missing.
+    cli_args.args.use_sage_attention = importlib.util.find_spec("sageattention") is not None
     logging.basicConfig(level=logging.INFO, format="%(message)s", force=True)
     # The allocator is chosen on the first torch import. ComfyUI sets this
     # before it loads any model.
