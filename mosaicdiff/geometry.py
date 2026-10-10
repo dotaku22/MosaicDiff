@@ -149,6 +149,33 @@ def stable_crop(
     return x1, y1, x2, y2
 
 
+def window_crops(
+    boxes: list[tuple[int, int, int, int] | None],
+    windows: list[list[int]],
+    frame_w: int,
+    frame_h: int,
+) -> list[tuple[int, int, int, int]]:
+    """One crop per sample, covering the boxes in that sample only.
+
+    A close-up would otherwise stretch the crop for the whole file, and a wider
+    shot would then be a small patch inside it. A sample with no detection keeps
+    the file crop so a gap between mosaics still has a rectangle to paste.
+    """
+    present = [box for box in boxes if box is not None]
+    if not present:
+        raise ValueError("window_crops needs at least one box")
+    fallback = stable_crop(present, frame_w, frame_h)
+    crops: list[tuple[int, int, int, int]] = []
+    for indices in windows:
+        chosen = [
+            boxes[index]
+            for index in indices
+            if 0 <= index < len(boxes) and boxes[index] is not None
+        ]
+        crops.append(stable_crop(chosen, frame_w, frame_h) if chosen else fallback)
+    return crops
+
+
 def letterbox(image, size: int = RESTORATION_SIZE):
     """Fit ``image`` inside a square. Returns the square and the content rectangle."""
     import cv2

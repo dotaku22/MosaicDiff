@@ -1,4 +1,4 @@
-"""BasicVSR++ on the mosaic, then MiniMax H3 on one locked crop."""
+"""BasicVSR++ on the mosaic, then MiniMax H3 on each sample's own crop."""
 
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ from mosaicdiff.geometry import (
     generation_size,
     letterbox,
     split_samples,
-    stable_crop,
+    window_crops,
 )
 from mosaicdiff.paths import nodes_dir, worker_script
 from mosaicdiff.settings import Settings
@@ -102,10 +102,8 @@ def process_video(
         del restorer
         torch.cuda.empty_cache()
 
-    crop = stable_crop([box for box in grown if box is not None], width, height)
-    log(f"H3 crop {crop[2] - crop[0]}x{crop[3] - crop[1]} at {crop[0]},{crop[1]}")
     try:
-        _h3(source, vsr_path, destination, settings, crop, grown, fps, log, progress, cancel)
+        _h3(source, vsr_path, destination, settings, grown, width, height, fps, log, progress, cancel)
     except Cancelled:
         vsr_path.unlink(missing_ok=True)
         raise
@@ -236,7 +234,7 @@ def _paste(frame: np.ndarray, patch: np.ndarray, box) -> np.ndarray:
     return base
 
 
-def _h3(source, vsr_path, destination, settings: Settings, crop, boxes, fps, log, progress, cancel) -> None:
+def _h3(source, vsr_path, destination, settings: Settings, boxes, width, height, fps, log, progress, cancel) -> None:
     present = [index for index, box in enumerate(boxes) if box is not None]
     first, last = present[0], present[-1]
     span = frames_at_h3_fps(last - first + 1, fps)
@@ -244,15 +242,16 @@ def _h3(source, vsr_path, destination, settings: Settings, crop, boxes, fps, log
     windows = split_samples(sampled)
     if not windows:
         raise RuntimeError("The restored section is shorter than 5 frames at 24 fps")
-    gen_w, gen_h = generation_size(crop[2] - crop[0], crop[3] - crop[1], settings.h3_resolution)
-    log(f"MiniMax H3, {len(windows)} sample(s), {gen_w}x{gen_h}")
+    crops = window_crops(boxes, windows, width, height)
+    log(f"MiniMax H3, {len(windows)} sample(s)")
     progress(0.58, "MiniMax H3")
     with tempfile.TemporaryDirectory(prefix="mosaicdiff-", dir=str(destination.parent)) as temp_name:
         temp = Path(temp_name)
         specs = []
-        for number, indices in enumerate(windows):
+        for number, (indices, crop) in enumerate(zip(windows, crops)):
             _check(cancel)
             context, overlap = fit_context(settings.h3_seconds, len(indices))
+            gen_w, gen_h = generation_size(crop[2] - crop[0], crop[3] - crop[1], settings.h3_resolution)
             out_dir = temp / f"window_{number:03d}"
             out_dir.mkdir()
             specs.append(
@@ -266,7 +265,11 @@ def _h3(source, vsr_path, destination, settings: Settings, crop, boxes, fps, log
                     "context_overlap": overlap,
                 }
             )
-            log(f"Sample {number + 1}: {len(indices)} frames, context {context}")
+            log(
+                f"Sample {number + 1}: {len(indices)} frames, "
+                f"crop {crop[2] - crop[0]}x{crop[3] - crop[1]} at {crop[0]},{crop[1]}, "
+                f"generation {gen_w}x{gen_h}, context {context}"
+            )
         job = {
             "comfy_root": str(settings.resolved("comfy_root")),
             "nodes_dir": str(nodes_dir()),
@@ -287,12 +290,13 @@ def _h3(source, vsr_path, destination, settings: Settings, crop, boxes, fps, log
         pastes = {}
         for spec in specs:
             out_dir = Path(spec["out_dir"])
+            crop = tuple(spec["crop"])
             for order, frame_idx in enumerate(spec["frame_indices"]):
                 image = out_dir / f"{order:06d}.png"
                 if image.is_file():
-                    pastes[int(frame_idx)] = image
+                    pastes[int(frame_idx)] = (image, crop)
         output_fps = H3_FPS if fps > H3_FPS + 0.05 else fps
-        _write_output(vsr_path, destination, pastes, crop, output_fps, fps, len(boxes))
+        _write_output(vsr_path, destination, pastes, output_fps, fps, len(boxes))
         if settings.compare:
             compare_path = destination.with_name(destination.stem + "_compare" + destination.suffix)
             try:
@@ -345,7 +349,7 @@ def _run_comfy(python: Path, job_path: Path, log, cancel) -> None:
         raise RuntimeError(f"MiniMax H3 process exited with status {code}")
 
 
-def _write_output(vsr_path, destination, pastes, crop, output_fps, source_fps, frame_count: int) -> None:
+def _write_output(vsr_path, destination, pastes, output_fps, source_fps, frame_count: int) -> None:
     capture, width, height, _fps, _count = open_capture(vsr_path)
     keep = set(frames_at_h3_fps(frame_count, source_fps)) if output_fps == H3_FPS else None
     writer = VideoWriter(destination, width, height, Fraction(output_fps).limit_denominator(1000))
@@ -358,8 +362,9 @@ def _write_output(vsr_path, destination, pastes, crop, output_fps, source_fps, f
             if keep is not None and index not in keep:
                 index += 1
                 continue
-            image_path = pastes.get(index)
-            if image_path is not None:
+            entry = pastes.get(index)
+            if entry is not None:
+                image_path, crop = entry
                 patch = cv2.imread(str(image_path), cv2.IMREAD_COLOR)
                 if patch is not None:
                     frame = _paste(frame, patch, crop)
