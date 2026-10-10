@@ -216,7 +216,33 @@ def _free_other_models() -> None:
     import comfy.model_management as model_management
 
     model_management.unload_all_models()
+    _end_node()
     model_management.soft_empty_cache()
+
+
+def _end_node() -> None:
+    """Release what ComfyUI's executor releases after every node.
+
+    unload_all_models only evicts model weights. With dynamic VRAM the UNET
+    forward also leaves behind the comfy-aimdo allocation plan (malloc graph,
+    sized to the activations of the largest sampling window) and the weight
+    cast buffers. Neither is evictable under VRAM pressure, so without this a
+    362-frame sample kept about 6 GiB and the next sample's text encoder ran
+    out of memory. Same three calls as ComfyUI's execution.py, in that order.
+    """
+    try:
+        import comfy.memory_management
+        import comfy.model_management
+        import comfy.model_prefetch
+        import comfy_aimdo.model_vbar
+    except ImportError:
+        # A ComfyUI without dynamic VRAM has nothing of this to release.
+        return
+    if not getattr(comfy.memory_management, "aimdo_enabled", False):
+        return
+    comfy.model_prefetch.cleanup_prefetch_queues()
+    comfy.model_management.reset_cast_buffers()
+    comfy_aimdo.model_vbar.vbars_reset_watermark_limits()
 
 
 def _watch_progress() -> None:
@@ -492,7 +518,9 @@ def _restore_window(loaded, job: dict, window: dict, crops: dict | None = None) 
         loaded["Image"].fromarray(array).save(out_dir / f"{index:06d}.png")
     print(f"Window finished in {time.perf_counter() - started:.1f}s", flush=True)
     del frames, positive, latent, sampled, images
-    torch.cuda.empty_cache()
+    # Leave the card as ComfyUI leaves it between prompts, so the next sample
+    # starts from the same free VRAM as the first one.
+    _free_other_models()
 
 
 def main() -> None:
