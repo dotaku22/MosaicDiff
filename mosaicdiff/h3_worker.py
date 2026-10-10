@@ -449,6 +449,23 @@ def _stream_windows(loaded, job: dict) -> None:
         raise RuntimeError(f"VSR video ended before H3 frame(s) {missing}")
 
 
+def _fit_reference(frames, width: int, height: int):
+    """Scale the reference to the generation size.
+
+    Comfy keeps a reference smaller than its 768-short-edge canvas, and scales a
+    larger one up to that canvas. A full-frame crop would otherwise be encoded
+    at 768x1344 while generation stays near 512, and those extra tokens are what
+    make each step slow.
+    """
+    if int(frames.shape[1]) == height and int(frames.shape[2]) == width:
+        return frames
+    import comfy.utils
+
+    return comfy.utils.common_upscale(
+        frames.movedim(-1, 1), width, height, "lanczos", "disabled"
+    ).movedim(1, -1)
+
+
 def _restore_window(loaded, job: dict, window: dict, crops: dict | None = None) -> None:
     torch = loaded["torch"]
     started = time.perf_counter()
@@ -477,6 +494,7 @@ def _restore_window(loaded, job: dict, window: dict, crops: dict | None = None) 
             "context_overlap": int(window.get("context_overlap", job.get("context_overlap", 22))),
         },
     )
+    frames = _fit_reference(frames, width, height)
     print(
         f"Conditioning {length} frames, generation {width}x{height}, reference {frames.shape[2]}x{frames.shape[1]}",
         flush=True,
