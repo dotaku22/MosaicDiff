@@ -39,6 +39,13 @@ def _boot() -> None:
         os.environ["MIMALLOC_PURGE_DELAY"] = "0"
     import cuda_malloc  # noqa: F401
 
+    # Comfy Kitchen's INT8 attention stands in for sage attention when the
+    # sageattention package is absent. Checked after cuda_malloc so the torch
+    # import it triggers sees the allocator choice. MOSAICDIFF_CK_ATTENTION=0
+    # keeps PyTorch attention for comparison.
+    if not cli_args.args.use_sage_attention and os.environ.get("MOSAICDIFF_CK_ATTENTION", "1") != "0":
+        cli_args.args.use_ck_attention = _ck_attention_available()
+
     if not cli_args.enables_dynamic_vram():
         return
     import comfy_aimdo.control
@@ -54,6 +61,21 @@ def _boot() -> None:
             comfy_aimdo.control.init(simple_vram_headroom=headroom)
         except TypeError:
             comfy_aimdo.control.init()
+
+
+def _ck_attention_available() -> bool:
+    """True when comfy_kitchen ships its INT8 attention kernel for this card.
+
+    Older comfy-kitchen (0.2.26, the one ComfyUI 0.30 pins) has no
+    int8_attention_is_available, and that ComfyUI has no --use-ck-attention
+    either, so the flag stays off there and PyTorch attention is used.
+    """
+    try:
+        import comfy_kitchen
+
+        return bool(comfy_kitchen.int8_attention_is_available())
+    except (ImportError, AttributeError):
+        return False
 
 
 def _enable_dynamic_vram() -> None:
